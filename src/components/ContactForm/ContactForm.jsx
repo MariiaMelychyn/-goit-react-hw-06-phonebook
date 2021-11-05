@@ -1,21 +1,20 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import { ToastContainer, toast } from 'react-toastify';
+
+import AddContactButton from '../AddContactButton';
 
 import styles from './ContactForm.module.scss';
+import 'react-toastify/dist/ReactToastify.css';
 
 class ContactForm extends Component {
-  // PropTypes как статическое свойство
-  static propTypes = {
-    onSubmit: PropTypes.func.isRequired,
-  };
-
   // Стейт формы
   state = {
     name: '',
     number: '',
   };
 
-  // Метод, наблюдающий за инпутами и записывающий в стейт их значения
+  // Следит за инпутом и пишет в локальный стейт его значение
   hanldeChange = event => {
     const { name, value } = event.currentTarget;
 
@@ -28,15 +27,35 @@ class ContactForm extends Component {
   hanldeSubmit = event => {
     event.preventDefault();
 
-     this.props.onSubmit(this.state); // Внешний метод в пропсах класса
+    const { name, number } = this.state;
+    const { contacts } = this.props;
+    const normalizedName = name.toLowerCase();
 
-    this.resetForm();
+    // Проверка на дубликат по имени
+    const nameInContacts = contacts.find(
+      contact => contact.name === normalizedName,
+    );
+
+    // Проверка на дубликат по номеру
+    const numberInContacts = contacts.find(
+      contact => contact.number === number,
+    );
+
+    // Отправка данных после проверки в экшн
+    if (!nameInContacts && !numberInContacts) {
+      this.props.onSubmit(normalizedName, number);
+      this.resetForm();
+      return;
+    }
+
+    toast.info(`${name} is already in contacts`, {
+      autoClose: 2500,
+    });
   };
 
   // Сброс полей формы (после отправки)
   resetForm = () => {
     this.setState({
-      id: '',
       name: '',
       number: '',
     });
@@ -53,13 +72,14 @@ class ContactForm extends Component {
             placeholder="Contact name"
             aria-label="Input for your name"
             className={styles.input}
-            value={this.state.name} // Пишем значение в стейт
+            value={this.state.name} // Пишет значение в локальный стейт
             onChange={this.hanldeChange} // Наблюдающий метод
             pattern="^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$"
             title="Имя может состоять только из букв, апострофа, тире и пробелов. Например Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan и т. п."
             required
           />
         </label>
+
         <label className={styles.label}>
           Number
           <input
@@ -68,21 +88,24 @@ class ContactForm extends Component {
             placeholder="Phone number"
             aria-label="Input for your phone number"
             className={styles.input}
-            value={this.state.number} // Пишем значение в стейт
+            value={this.state.number} // Пишет значение в локальный стейт
             onChange={this.hanldeChange} // Наблюдающий метод
             pattern="(\+?( |-|\.)?\d{1,2}( |-|\.)?)?(\(?\d{3}\)?|\d{3})( |-|\.)?(\d{3}( |-|\.)?\d{4})"
             title="Номер телефона должен состоять из 11-12 цифр и может содержать цифры, пробелы, тире, пузатые скобки и может начинаться с +"
             required
           />
         </label>
-        <div className={styles.button__wrapper}>
-          <button type="submit" className={styles.button}>
-            Add contact
-          </button>
-        </div>
+
+        <AddContactButton />
+
+        <ToastContainer />
       </form>
     );
   }
 }
+
+ContactForm.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
+};
 
 export default ContactForm;
